@@ -1,5 +1,6 @@
 /**
  * Config manager — reads/writes config.json for onboarding defaults.
+ * The API key is stored here after onboarding (no env var required).
  */
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
@@ -9,6 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = join(__dirname, "..", "config.json");
 
 const DEFAULT_CONFIG = {
+  api_key: null,
   workspace_id: null,
   workspace_name: null,
   default_list_id: null,
@@ -41,6 +43,20 @@ export function saveConfig(config) {
 
 export function getConfigPath() {
   return CONFIG_PATH;
+}
+
+/**
+ * Get the API key from: env var (priority) → config.json → null
+ */
+export function getApiKey() {
+  if (process.env.CLICKUP_API_KEY) {
+    return process.env.CLICKUP_API_KEY;
+  }
+  const config = loadConfig();
+  if (config?.api_key) {
+    return config.api_key;
+  }
+  return null;
 }
 
 export { DEFAULT_CONFIG };

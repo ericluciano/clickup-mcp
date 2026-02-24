@@ -3,15 +3,14 @@
  * Uses ClickUp API v3 for chat features.
  */
 import { z } from "zod";
-import { loadConfig } from "../config.js";
+import { loadConfig, getApiKey } from "../config.js";
 
 const BASE_URL_V3 = "https://api.clickup.com/api/v3";
 
-function getApiKey() {
-  return process.env.CLICKUP_API_KEY;
-}
-
 async function requestV3(method, path, body = null, query = {}) {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error("No API key configured. Run clickup_onboarding first.");
+
   const url = new URL(`${BASE_URL_V3}${path}`);
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
@@ -19,7 +18,7 @@ async function requestV3(method, path, body = null, query = {}) {
   const opts = {
     method,
     headers: {
-      Authorization: getApiKey(),
+      Authorization: apiKey,
       "Content-Type": "application/json",
     },
   };

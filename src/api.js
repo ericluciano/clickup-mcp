@@ -1,14 +1,29 @@
 /**
  * ClickUp API v2 client
  * All HTTP calls to the ClickUp API go through here.
+ * API key is resolved from: env var → config.json
  */
+
+import { getApiKey as resolveApiKey } from "./config.js";
 
 const BASE_URL = "https://api.clickup.com/api/v2";
 
+/**
+ * Get API key, with optional override (used during onboarding).
+ */
+let _apiKeyOverride = null;
+
+export function setApiKeyOverride(key) {
+  _apiKeyOverride = key;
+}
+
 function getApiKey() {
-  const key = process.env.CLICKUP_API_KEY;
+  if (_apiKeyOverride) return _apiKeyOverride;
+  const key = resolveApiKey();
   if (!key) {
-    throw new Error("CLICKUP_API_KEY environment variable is required");
+    throw new Error(
+      "No API key configured. Run clickup_onboarding with your API key first."
+    );
   }
   return key;
 }
@@ -18,12 +33,6 @@ function headers(extra = {}) {
     Authorization: getApiKey(),
     "Content-Type": "application/json",
     ...extra,
-  };
-}
-
-function multipartHeaders() {
-  return {
-    Authorization: getApiKey(),
   };
 }
 

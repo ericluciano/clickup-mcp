@@ -5,6 +5,8 @@
  *
  * Provides full ClickUp task management via Claude Code.
  * Supports personal/private lists, onboarding, and default task creation rules.
+ *
+ * No env var required — run clickup_onboarding to configure everything.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -17,29 +19,24 @@ import { registerCommentTools } from "./src/tools/comments.js";
 import { registerTimeTrackingTools } from "./src/tools/timetracking.js";
 import { registerDocumentTools } from "./src/tools/documents.js";
 import { registerChatTools } from "./src/tools/chat.js";
-import { loadConfig } from "./src/config.js";
+import { loadConfig, getApiKey } from "./src/config.js";
 
 async function main() {
-  // Validate API key exists
-  if (!process.env.CLICKUP_API_KEY) {
-    console.error(
-      "ERROR: CLICKUP_API_KEY environment variable is required.\n" +
-        "Get your personal API token at: ClickUp > Settings > Apps > API Token"
-    );
-    process.exit(1);
-  }
-
   const config = loadConfig();
+  const hasApiKey = !!getApiKey();
 
   // Build dynamic instructions
-  let instructions = "ClickUp MCP — personal API key integration for task management.";
-  if (config) {
+  let instructions =
+    "ClickUp MCP — personal API key integration for task management.";
+
+  if (hasApiKey && config?.workspace_id) {
     instructions += `\nWorkspace: ${config.workspace_name || config.workspace_id}`;
-    instructions += `\nDefault list: ${config.default_list_name || config.default_list_id}`;
-    instructions += `\nUser: ${config.user_name} (${config.user_email})`;
+    instructions += `\nDefault list: ${config.default_list_name || config.default_list_id || "(not set)"}`;
+    instructions += `\nUser: ${config.user_name || "?"} (${config.user_email || "?"})`;
   } else {
     instructions +=
-      "\n\nIMPORTANT: No configuration found. Run clickup_onboarding first to set up the MCP.";
+      "\n\nNot configured yet. Run clickup_onboarding with your API key to set up." +
+      "\nThe user needs to provide their ClickUp personal API token (Settings > Apps > API Token).";
   }
 
   const server = new McpServer(
