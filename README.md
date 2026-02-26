@@ -4,6 +4,8 @@ Local MCP (Model Context Protocol) server for ClickUp, using **personal API Key*
 
 Unlike OAuth-based integrations, this MCP uses your personal API token — giving you access to **all your lists, including personal and private ones**.
 
+> **Credentials are personal.** Each person uses their own ClickUp API key. No credentials are included in this repository.
+
 ## Features
 
 - **28 tools** covering tasks, comments, time tracking, documents, chat, and workspace management
