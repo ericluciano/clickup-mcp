@@ -59,17 +59,24 @@ Returns matching tasks with basic details. Use clickup_get_task for full details
           .map((s) => s.trim());
       }
 
-      // Use server-side search endpoint with query string
-      queryParams.query = params.query;
+      // Note: ClickUp API v2 does not support text search via query param on /team/task.
+      // We fetch tasks with server filters (list, status, assignee) and filter by text client-side.
       const result = await api.searchTasks(teamId, queryParams);
       const tasks = result.tasks || [];
 
-      if (tasks.length === 0) {
+      const query = params.query.toLowerCase();
+      const filtered = tasks.filter(
+        (t) =>
+          t.name?.toLowerCase().includes(query) ||
+          t.text_content?.toLowerCase().includes(query)
+      );
+
+      if (filtered.length === 0) {
         return okText(`No tasks found matching "${params.query}".`);
       }
 
-      let msg = `**Found ${tasks.length} task(s):**\n\n`;
-      for (const t of tasks) {
+      let msg = `**Found ${filtered.length} task(s):**\n\n`;
+      for (const t of filtered) {
         const assignees =
           t.assignees?.map((a) => a.username).join(", ") || "unassigned";
         msg += `- **${t.name}** (ID: \`${t.id}\`) — Status: ${t.status?.status || "?"} | Assignees: ${assignees} | Priority: ${t.priority?.priority || "none"}\n`;
