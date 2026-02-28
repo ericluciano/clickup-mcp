@@ -228,6 +228,63 @@ Priority values: 1=Urgent, 2=High, 3=Normal, 4=Low`,
     }
   );
 
+  // --- List tasks in a list ---
+  server.tool(
+    "clickup_list_tasks",
+    "List tasks in a specific ClickUp list with optional filters. More reliable than search for known lists.",
+    {
+      list_id: z.string().describe("The list ID to fetch tasks from"),
+      statuses: z
+        .string()
+        .optional()
+        .describe("Comma-separated statuses to filter by. Ex: 'a fazer,em execução'"),
+      assignees: z
+        .string()
+        .optional()
+        .describe("Comma-separated user IDs to filter by"),
+      include_closed: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Include closed/completed tasks (default: false)"),
+      page: z
+        .number()
+        .optional()
+        .default(0)
+        .describe("Page number for pagination (default: 0, 100 tasks per page)"),
+    },
+    async (params) => {
+      const query = {
+        include_closed: params.include_closed ?? false,
+        page: params.page ?? 0,
+      };
+
+      if (params.statuses) {
+        query.statuses = params.statuses.split(",").map((s) => s.trim());
+      }
+      if (params.assignees) {
+        query.assignees = params.assignees.split(",").map((s) => Number(s.trim()));
+      }
+
+      const result = await api.getTasksInList(params.list_id, query);
+      const tasks = result.tasks || [];
+
+      if (tasks.length === 0) {
+        return okText(`No tasks found in list \`${params.list_id}\`.`);
+      }
+
+      let msg = `**Tasks in list \`${params.list_id}\` — ${tasks.length} found (page ${params.page ?? 0}):**\n\n`;
+      for (const t of tasks) {
+        const assignees = t.assignees?.map((a) => a.username).join(", ") || "unassigned";
+        const due = t.due_date ? new Date(Number(t.due_date)).toLocaleDateString("pt-BR") : "none";
+        const priority = t.priority?.priority || "none";
+        msg += `- **${t.name}** (ID: \`${t.id}\`) — Status: ${t.status?.status || "?"} | Assignees: ${assignees} | Priority: ${priority} | Due: ${due}\n`;
+      }
+
+      return okText(msg);
+    }
+  );
+
   // --- Add tag ---
   server.tool(
     "clickup_add_tag_to_task",
@@ -308,6 +365,20 @@ function formatTask(task) {
     msg += `\n**Subtasks:**\n`;
     for (const st of task.subtasks) {
       msg += `  - ${st.name} (\`${st.id}\`) — ${st.status?.status || "?"}\n`;
+    }
+  }
+
+  if (task.custom_fields?.length > 0) {
+    const filled = task.custom_fields.filter(
+      (f) => f.value !== undefined && f.value !== null && f.value !== ""
+    );
+    if (filled.length > 0) {
+      msg += `\n**Custom Fields:**\n`;
+      for (const f of filled) {
+        let val = f.value;
+        if (typeof val === "object") val = JSON.stringify(val);
+        msg += `  - ${f.name}: ${val}\n`;
+      }
     }
   }
 

@@ -122,6 +122,13 @@ export const getTask = (taskId) =>
   request("GET", `/task/${taskId}`, null, {
     include_markdown_description: true,
     include_subtasks: true,
+    custom_fields: true,
+  });
+export const getTasksInList = (listId, query = {}) =>
+  request("GET", `/list/${listId}/task`, null, {
+    include_markdown_description: true,
+    subtasks: true,
+    ...query,
   });
 export const updateTask = (taskId, data) =>
   request("PUT", `/task/${taskId}`, data);
@@ -139,6 +146,8 @@ export const getTaskComments = (taskId) =>
   request("GET", `/task/${taskId}/comment`);
 export const createTaskComment = (taskId, data) =>
   request("POST", `/task/${taskId}/comment`, data);
+export const deleteComment = (commentId) =>
+  request("DELETE", `/comment/${commentId}`);
 
 // --- Attachments ---
 export { uploadFile };

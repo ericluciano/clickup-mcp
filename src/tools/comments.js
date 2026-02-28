@@ -69,6 +69,19 @@ export function registerCommentTools(server) {
     }
   );
 
+  // --- Delete comment ---
+  server.tool(
+    "clickup_delete_comment",
+    "Delete a comment from a task by comment ID.",
+    {
+      comment_id: z.string().describe("The comment ID to delete"),
+    },
+    async ({ comment_id }) => {
+      await api.deleteComment(comment_id);
+      return okText(`Comment \`${comment_id}\` deleted successfully.`);
+    }
+  );
+
   // --- Attach file to task ---
   server.tool(
     "clickup_attach_task_file",
