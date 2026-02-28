@@ -300,6 +300,19 @@ Priority values: 1=Urgent, 2=High, 3=Normal, 4=Low`,
     }
   );
 
+  // --- Delete task ---
+  server.tool(
+    "clickup_delete_task",
+    "Permanently delete a task by ID. This action cannot be undone.",
+    {
+      task_id: z.string().describe("The task ID to delete"),
+    },
+    async ({ task_id }) => {
+      await api.deleteTask(task_id);
+      return okText(`Task \`${task_id}\` deleted permanently.`);
+    }
+  );
+
   // --- Add tag ---
   server.tool(
     "clickup_add_tag_to_task",

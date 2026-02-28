@@ -137,6 +137,8 @@ export const getTasksInList = (listId, query = {}) =>
   });
 export const updateTask = (taskId, data) =>
   request("PUT", `/task/${taskId}`, data);
+export const deleteTask = (taskId) =>
+  request("DELETE", `/task/${taskId}`);
 export const searchTasks = (teamId, query = {}) =>
   request("GET", `/team/${teamId}/task`, null, query);
 
