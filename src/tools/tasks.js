@@ -63,6 +63,10 @@ Priority values: 1=Urgent, 2=High, 3=Normal, 4=Low`,
         .boolean()
         .optional()
         .describe("Notify all assignees (default: true)"),
+      custom_fields: z
+        .string()
+        .optional()
+        .describe('JSON array of custom field values. Ex: [{"id":"field_id","value":"text"}]'),
     },
     async (params) => {
       const config = loadConfig();
@@ -119,6 +123,9 @@ Priority values: 1=Urgent, 2=High, 3=Normal, 4=Low`,
         ...(params.time_estimate && { time_estimate: params.time_estimate }),
         ...(params.parent && { parent: params.parent }),
         notify_all: params.notify_all ?? true,
+        ...(params.custom_fields && {
+          custom_fields: JSON.parse(params.custom_fields),
+        }),
       };
 
       const task = await api.createTask(listId, body);
@@ -189,6 +196,10 @@ Priority values: 1=Urgent, 2=High, 3=Normal, 4=Low`,
         .string()
         .optional()
         .describe("Move task under a parent (make subtask)"),
+      custom_fields: z
+        .string()
+        .optional()
+        .describe('JSON array of custom field values. Ex: [{"id":"field_id","value":"text"}]'),
     },
     async (params) => {
       const body = {};
@@ -218,6 +229,10 @@ Priority values: 1=Urgent, 2=High, 3=Normal, 4=Low`,
             .split(",")
             .map((s) => Number(s.trim()));
         }
+      }
+
+      if (params.custom_fields) {
+        body.custom_fields = JSON.parse(params.custom_fields);
       }
 
       const task = await api.updateTask(params.task_id, body);

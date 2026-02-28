@@ -59,25 +59,17 @@ Returns matching tasks with basic details. Use clickup_get_task for full details
           .map((s) => s.trim());
       }
 
-      // Use filtered task search
+      // Use server-side search endpoint with query string
+      queryParams.query = params.query;
       const result = await api.searchTasks(teamId, queryParams);
       const tasks = result.tasks || [];
 
-      // Filter by query string client-side if needed
-      const query = params.query.toLowerCase();
-      const filtered = tasks.filter(
-        (t) =>
-          t.name?.toLowerCase().includes(query) ||
-          t.description?.toLowerCase().includes(query) ||
-          t.text_content?.toLowerCase().includes(query)
-      );
-
-      if (filtered.length === 0) {
+      if (tasks.length === 0) {
         return okText(`No tasks found matching "${params.query}".`);
       }
 
-      let msg = `**Found ${filtered.length} task(s):**\n\n`;
-      for (const t of filtered) {
+      let msg = `**Found ${tasks.length} task(s):**\n\n`;
+      for (const t of tasks) {
         const assignees =
           t.assignees?.map((a) => a.username).join(", ") || "unassigned";
         msg += `- **${t.name}** (ID: \`${t.id}\`) — Status: ${t.status?.status || "?"} | Assignees: ${assignees} | Priority: ${t.priority?.priority || "none"}\n`;
@@ -157,6 +149,74 @@ Returns a structured view of the entire workspace.`,
     }
   );
 
+  // --- Create List (in space, folderless) ---
+  server.tool(
+    "clickup_create_list",
+    "Create a new list directly in a space (folderless).",
+    {
+      space_id: z.string().describe("The space ID to create the list in"),
+      name: z.string().describe("List name"),
+      content: z.string().optional().describe("List description"),
+      status: z.string().optional().describe("Initial status"),
+    },
+    async (params) => {
+      const body = {
+        name: params.name,
+        ...(params.content && { content: params.content }),
+        ...(params.status && { status: params.status }),
+      };
+      const list = await api.createList(params.space_id, body);
+      return okText(
+        `List created!\n**Name:** ${list.name}\n**ID:** \`${list.id}\`\n**Space:** ${list.space?.name || params.space_id}`
+      );
+    }
+  );
+
+  // --- Create List in Folder ---
+  server.tool(
+    "clickup_create_list_in_folder",
+    "Create a new list inside a folder.",
+    {
+      folder_id: z.string().describe("The folder ID"),
+      name: z.string().describe("List name"),
+      content: z.string().optional().describe("List description"),
+      status: z.string().optional().describe("Initial status"),
+    },
+    async (params) => {
+      const body = {
+        name: params.name,
+        ...(params.content && { content: params.content }),
+        ...(params.status && { status: params.status }),
+      };
+      const list = await api.createListInFolder(params.folder_id, body);
+      return okText(
+        `List created in folder!\n**Name:** ${list.name}\n**ID:** \`${list.id}\``
+      );
+    }
+  );
+
+  // --- Update List ---
+  server.tool(
+    "clickup_update_list",
+    "Update a list's name, content or status.",
+    {
+      list_id: z.string().describe("The list ID to update"),
+      name: z.string().optional().describe("New list name"),
+      content: z.string().optional().describe("New description"),
+      status: z.string().optional().describe("New status"),
+    },
+    async (params) => {
+      const body = {};
+      if (params.name) body.name = params.name;
+      if (params.content) body.content = params.content;
+      if (params.status) body.status = params.status;
+      const list = await api.updateList(params.list_id, body);
+      return okText(
+        `List updated!\n**Name:** ${list.name}\n**ID:** \`${list.id}\``
+      );
+    }
+  );
+
   // --- Get Folder ---
   server.tool(
     "clickup_get_folder",
@@ -167,6 +227,38 @@ Returns a structured view of the entire workspace.`,
     async ({ folder_id }) => {
       const folder = await api.getFolder(folder_id);
       return okText(formatObject(folder));
+    }
+  );
+
+  // --- Create Folder ---
+  server.tool(
+    "clickup_create_folder",
+    "Create a new folder in a space.",
+    {
+      space_id: z.string().describe("The space ID to create the folder in"),
+      name: z.string().describe("Folder name"),
+    },
+    async (params) => {
+      const folder = await api.createFolder(params.space_id, { name: params.name });
+      return okText(
+        `Folder created!\n**Name:** ${folder.name}\n**ID:** \`${folder.id}\``
+      );
+    }
+  );
+
+  // --- Update Folder ---
+  server.tool(
+    "clickup_update_folder",
+    "Update a folder's name.",
+    {
+      folder_id: z.string().describe("The folder ID to update"),
+      name: z.string().describe("New folder name"),
+    },
+    async (params) => {
+      const folder = await api.updateFolder(params.folder_id, { name: params.name });
+      return okText(
+        `Folder updated!\n**Name:** ${folder.name}\n**ID:** \`${folder.id}\``
+      );
     }
   );
 

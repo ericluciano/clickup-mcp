@@ -155,12 +155,21 @@ The doc can be linked to a list, folder, or space via the parent object.`,
   // --- Update document page ---
   server.tool(
     "clickup_update_document_page",
-    "Update an existing page in a ClickUp Doc.",
+    `Update an existing page in a ClickUp Doc.
+Supports three edit modes:
+- replace (default): overwrites content entirely
+- append: adds content AFTER existing content (use to add notes without losing formatting)
+- prepend: adds content BEFORE existing content`,
     {
       doc_id: z.string().describe("The document ID"),
       page_id: z.string().describe("The page ID to update"),
       title: z.string().optional().describe("New page title"),
-      content: z.string().optional().describe("New page content (markdown)"),
+      content: z.string().optional().describe("Content (markdown)"),
+      content_edit_mode: z
+        .enum(["replace", "append", "prepend"])
+        .optional()
+        .default("replace")
+        .describe("How to update content: replace (default), append or prepend"),
       workspace_id: z.string().optional().describe("Workspace ID"),
     },
     async (params) => {
@@ -169,20 +178,32 @@ The doc can be linked to a list, folder, or space via the parent object.`,
       if (!workspaceId)
         return errorText("No workspace configured. Run clickup_onboarding.");
 
+      const mode = params.content_edit_mode || "replace";
+
+      // For append/prepend, read existing content first
+      let finalContent = params.content;
+      if (params.content && (mode === "append" || mode === "prepend")) {
+        try {
+          const existing = await api.getDocPage(workspaceId, params.doc_id, params.page_id);
+          const existingContent = existing.content || "";
+          if (mode === "append") {
+            finalContent = existingContent + "\n\n" + params.content;
+          } else {
+            finalContent = params.content + "\n\n" + existingContent;
+          }
+        } catch {
+          // fallback to replace if read fails
+        }
+      }
+
       const body = {};
       if (params.title) body.title = params.title;
-      if (params.content) body.content = params.content;
+      if (finalContent !== undefined) body.content = finalContent;
 
-      await api.updateDocPage(
-        workspaceId,
-        params.doc_id,
-        params.page_id,
-        body
-      );
+      await api.updateDocPage(workspaceId, params.doc_id, params.page_id, body);
 
-      return okText(
-        `Page \`${params.page_id}\` updated in document \`${params.doc_id}\`.`
-      );
+      const modeLabel = mode === "append" ? "appended to" : mode === "prepend" ? "prepended to" : "replaced in";
+      return okText(`Page \`${params.page_id}\` content ${modeLabel} document \`${params.doc_id}\`.`);
     }
   );
 }

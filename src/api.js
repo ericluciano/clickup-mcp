@@ -113,7 +113,12 @@ export const getFolderlessLists = (spaceId) =>
 export const getListsInFolder = (folderId) =>
   request("GET", `/folder/${folderId}/list`, null, { archived: false });
 export const getList = (listId) => request("GET", `/list/${listId}`);
+export const createList = (spaceId, data) => request("POST", `/space/${spaceId}/list`, data);
+export const createListInFolder = (folderId, data) => request("POST", `/folder/${folderId}/list`, data);
+export const updateList = (listId, data) => request("PUT", `/list/${listId}`, data);
 export const getFolder = (folderId) => request("GET", `/folder/${folderId}`);
+export const createFolder = (spaceId, data) => request("POST", `/space/${spaceId}/folder`, data);
+export const updateFolder = (folderId, data) => request("PUT", `/folder/${folderId}`, data);
 
 // --- Tasks ---
 export const createTask = (listId, data) =>
