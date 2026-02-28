@@ -4,6 +4,9 @@
   "description": "ClickUp MCP server for Claude Code — personal API key based, with onboarding and full task management",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node index.js"
   },
